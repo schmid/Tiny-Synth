@@ -75,6 +75,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="tiny.cpp" />
+    <ClCompile Include="wav_file.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="wav_file.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
