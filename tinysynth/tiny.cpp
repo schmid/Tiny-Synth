@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <sstream>
 #include "wav_file.hpp"
 using namespace std;
 
@@ -14,9 +15,9 @@ float midi2freq(int note, int octave) {
     return 32.70319566257483 * pow(2., note / 12. + octave);
 }
 
-void vibrato_sine(int note, int octave, float * buffer, unsigned int sample_count, float seconds_per_sample) {
+void vibrato_sine(int note, int octave, vector<float> &buffer, float seconds_per_sample) {
 
-	int o = 0; // internal offset
+	unsigned int sample_count = buffer.size();
 	double ph = 0.0;
 	double lfo_ph = 0.0;
 	double env = 0.9;
@@ -26,7 +27,7 @@ void vibrato_sine(int note, int octave, float * buffer, unsigned int sample_coun
 
 	for(int n = 0; n < sample_count; n++) {
 
-		env -= 0.00001;
+		env = 0.9 - 0.9 * 2 * (float)n / sample_count;
 		if(env < 0)
 			env = 0;
 
@@ -34,7 +35,7 @@ void vibrato_sine(int note, int octave, float * buffer, unsigned int sample_coun
 		ph += relfreq + svin(lfo_ph) * 0.00006;
 		lfo_ph += lfo_relfreq;
 
-		buffer[o++] = out;
+		buffer[n] = out;
 	}
 	
 }
@@ -48,8 +49,7 @@ int main() {
 	unsigned int channels = 1;
 	const unsigned int sample_count = sr * 4;
 
-	float *samples = new float [sample_count]; // internal buffer
-	Sample *output = new Sample[sample_count]; // output buffer
+	vector<float> samples(sr * 1, 0); // internal buffer
 
 	struct Note {
 		Note(const string & note_name, int midi_note, int midi_octave)
@@ -63,26 +63,23 @@ int main() {
 	};
 
 	vector<Note> notes;
-	notes.push_back(Note("c3", 0, 3));
-	notes.push_back(Note("d3", 2, 3));
-	notes.push_back(Note("eb3", 3, 3));
-	notes.push_back(Note("f3", 5, 3));
-	notes.push_back(Note("g3", 7, 3));
-	notes.push_back(Note("ab3", 8, 3));
-	notes.push_back(Note("bb3", 10, 3));
-	notes.push_back(Note("c4", 0, 4));
+	ostringstream ss;
+	for(int n = 0; n <= 12; ++n) {
+		ss.str("");
+		ss << "note" << n;
+		notes.push_back(Note(ss.str(), n, 3));
+	}
 
 	Wav_file<Sample> wav_file(1, 44100);
 
 	for(auto i = notes.cbegin(); i != notes.cend(); ++i) {
-		vibrato_sine(i->midi_note, i->midi_octave, samples, sample_count, seconds_per_sample);
-
-		for(int s = 0; s < sample_count; ++s) {
-			output[s] = (Sample) (samples[s] * (1<<15));
-		}
-
-		wav_file.save(i->note_name + ".wav", output, sample_count);
-
+		vibrato_sine(i->midi_note, i->midi_octave, samples, seconds_per_sample);
+		wav_file.save(i->note_name + ".wav", samples);
 	}
+
+	samples.resize(44100 * 8);
+	vibrato_sine(0, 1, samples, seconds_per_sample);
+	wav_file.save("c1_long.wav", samples);
+
 	return 0;
 }

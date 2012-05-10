@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdint>
+#include <limits>
 
 #include "wav_file.hpp"
 
@@ -40,10 +41,18 @@ Wav_file<Sample_type>::Wav_file(unsigned int channels, unsigned int sample_rate)
 	memcpy(riff, "RIFF\0\0\0\0WAVE", 12);
 }
 
+template<typename Sample_type>
+Wav_file<Sample_type>::~Wav_file() {
+	delete [] riff;
+	delete [] fmt;
+	delete [] data;
+}
+
 template <typename Sample_type>
-void Wav_file<Sample_type>::save(const string & filename, Sample_type *output, unsigned int sample_count) {
+void Wav_file<Sample_type>::save(const string & filename, const vector<Sample_type> &samples) {
 
 	unsigned int o = 4;
+	unsigned int sample_count = samples.size();
 	data[o++] = sample_count & 255; data[o++] = (sample_count >> 8) & 255;
 	data[o++] = (sample_count >> 16) & 255; data[o++] = sample_count >> 24;
 
@@ -55,7 +64,27 @@ void Wav_file<Sample_type>::save(const string & filename, Sample_type *output, u
 	fwrite(riff, 1, 12, f);
 	fwrite(fmt, 1, 24, f);
 	fwrite(data, 1, 8, f);
-   	fwrite(output, sizeof(Sample_type), sample_count, f);
+	fwrite(samples.data(), sizeof(Sample_type), sample_count, f);
 
 	fclose(f);
+}
+
+template<typename Sample_type>
+void Wav_file<Sample_type>::convert(const vector<float> &samples, vector<Sample_type> &output_samples) {
+
+	unsigned int bits = numeric_limits<Sample_type>::digits;
+	unsigned int sample_count = samples.size();
+
+	output_samples.resize(sample_count, 0);
+
+	for(int s = 0; s < sample_count; ++s) {
+		output_samples[s] = static_cast<Sample_type>(samples[s] * (1 << bits));
+	}
+}
+
+template <typename Sample_type>
+void Wav_file<Sample_type>::save(const string & filename, const vector<float> &buffer) {
+	vector<Sample_type> output;
+	convert(buffer, output);
+	save(filename, output);
 }
