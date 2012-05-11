@@ -7,12 +7,34 @@
 #include "wav_file.hpp"
 using namespace std;
 
-
 float svin(float periods) {	return sin(periods * 6.283185307179586); }
+float saw(float periods) { return periods - floor(periods); }
 
 float midi2freq(int note, int octave) {
 
     return 32.70319566257483 * pow(2., note / 12. + octave);
+}
+
+
+void repeator(vector<float> &buffer, float seconds_per_sample) {
+	unsigned int sample_count = buffer.size();
+	double ph = 0.0;
+	float env = 0.9;
+	// relfreq is periods per sample = normal freq * seconds_per_sample
+	//double relfreq = midi2freq(0, 1) * seconds_per_sample /* p/s * s/smp */;
+	double freq = midi2freq(0, 1) /* p/s */;
+	double time = 0.0;
+	for(int n = 0; n < sample_count; n++) {
+
+		time = saw(n * seconds_per_sample * 2.0);
+
+		env = max(1.0 - time * 4.0, 0.0);
+		ph  = time * freq;
+
+		double out = svin(ph) * env;
+
+		buffer[n] = out;
+	}
 }
 
 void vibrato_sine(int note, int octave, vector<float> &buffer, float seconds_per_sample) {
@@ -49,7 +71,7 @@ int main() {
 	unsigned int channels = 1;
 	const unsigned int sample_count = sr * 4;
 
-	vector<float> samples(sr * 1, 0); // internal buffer
+	vector<float> samples(sr / 2, 0); // internal buffer
 
 	struct Note {
 		Note(const string & note_name, int midi_note, int midi_octave)
@@ -78,7 +100,7 @@ int main() {
 	}
 
 	samples.resize(44100 * 8);
-	vibrato_sine(0, 1, samples, seconds_per_sample);
+	repeator(samples, seconds_per_sample);
 	wav_file.save("c1_long.wav", samples);
 
 	return 0;

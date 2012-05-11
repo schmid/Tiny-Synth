@@ -71,7 +71,7 @@ void Wav_file<Sample_type>::save(const string & filename, const vector<Sample_ty
 
 template<typename Sample_type>
 void Wav_file<Sample_type>::convert(const vector<float> &samples, vector<Sample_type> &output_samples) {
-
+		
 	unsigned int bits = numeric_limits<Sample_type>::digits;
 	unsigned int sample_count = samples.size();
 
