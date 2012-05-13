@@ -82,6 +82,7 @@
     <ClCompile Include="wav_file.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="samples.hpp" />
     <ClInclude Include="wav_file.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

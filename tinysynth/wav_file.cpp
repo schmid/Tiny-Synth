@@ -78,7 +78,7 @@ void Wav_file<Sample_type>::convert(const vector<float> &samples, vector<Sample_
     output_samples.resize(sample_count, 0);
 
     for(int s = 0; s < sample_count; ++s) {
-        output_samples[s] = static_cast<Sample_type>(samples[s] * (1 << bits));
+        output_samples[s] = static_cast<Sample_type>(samples[s] * ((1 << bits) - 1));
     }
 }
 

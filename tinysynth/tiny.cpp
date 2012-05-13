@@ -4,9 +4,11 @@
 #include <sstream>
 #include <vector>
 #include "wav_file.hpp"
+#include "samples.hpp"
 using namespace std;
 
 float svin(float periods) {	return sin(periods * 6.283185307179586); }
+float spike(float periods) { return periods > 1 ? 0 : periods; }
 float saw(float periods) { return periods - floor(periods); }
 float midi2freq(int note, int octave) {
     return 32.70319566257483 * pow(2., note / 12. + octave);
@@ -17,13 +19,34 @@ public:
     typedef signed short Sample;
 
     Buffer(unsigned int smp_count, unsigned int smp_p_s = 44100, unsigned int channels = 1)
-        : smp_p_s(smp_p_s), s_p_smp(1.0/smp_p_s), samples(smp_count)
+        : smp_p_s(smp_p_s), s_p_smp(1.0/smp_p_s), channels(channels), samples(smp_count)
     {}
 
     ~Buffer() {}
 
+    float read_8bit_unsigned(unsigned char data) {
+         return data / 128.0f - 1.0f;
+    }
+
+    void amen() {
+        double p = 0;
+        int seq[] = { 0, 0, 1, 2, 2, 1, 0, 0 };
+        for(int n = 0; n < smp_count(); ++n) {
+            //int wi = seq[ n 
+            p = spike(n * s_p_smp * 4.0); 
+            samples[n] = read_8bit_unsigned(amen_bd[(unsigned int)(p*amen_bd_size)]);
+        }
+    }
+
     void unit_impulse(unsigned int sample_index) {
-        samples[sample_index] = 1;
+        samples[sample_index] = 1.f;
+    }
+
+    void impulse_rhythm() {
+        double ph = 0;
+        for(int n = 0; n < smp_count(); n += smp_count() / 4) {
+            unit_impulse(n);
+        }
     }
 
     void repeator() {
@@ -67,15 +90,8 @@ public:
         }
     }
 
-    void impulse_rhythm(float seconds_per_sample) {
-        double ph = 0;
-        for(int n = 0; n < smp_count(); n += (int)(1.0f/s_p_smp)) {
-        
-        }
-    }
-
     void save(const string & filename) {
-        Wav_file<Sample> wav_file(1, 44100);
+        Wav_file<Sample> wav_file(channels, smp_p_s);
         wav_file.save(filename.c_str(), samples);
     }
 
@@ -86,11 +102,13 @@ public:
 private:
     vector<float> samples;
     double s_p_smp;
-    double smp_p_s;
+    unsigned int smp_p_s;
     unsigned int channels;
 };
 
 int main() {
+    Buffer buffer(44100*4);
+    /*
     struct Note {
         Note(const string & note_name, int midi_note, int midi_octave)
             : note_name(note_name),
@@ -102,7 +120,6 @@ int main() {
         int midi_octave;
     };
 
-    Buffer buffer(44100/2);
     vector<Note> notes;
     ostringstream ss;
     for(int n = 0; n <= 12; ++n) {
@@ -119,6 +136,10 @@ int main() {
     buffer.resize(44100 * 8);
     buffer.repeator();
     buffer.save("c1_long.wav");
+    */
+
+    buffer.amen();
+    buffer.save("output.wav");
 
     return 0;
 }
