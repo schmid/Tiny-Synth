@@ -1,5 +1,4 @@
 /* By Jakob Schmid 2012. */
-
 #include <cmath>
 #include <sstream>
 #include <vector>
@@ -7,6 +6,7 @@
 #include "samples.hpp"
 using namespace std;
 
+// Standard synth functions
 float svin(float periods) {	return sin(periods * 6.283185307179586); }
 float spike(float periods) { return periods > 1 ? 0 : periods; }
 float saw(float periods) { return periods - floor(periods); }
@@ -106,9 +106,8 @@ private:
     unsigned int channels;
 };
 
-int main() {
-    Buffer buffer(44100*4);
-    /*
+void make_notes() {
+    Buffer buffer(44100/2);
     struct Note {
         Note(const string & note_name, int midi_note, int midi_octave)
             : note_name(note_name),
@@ -132,12 +131,18 @@ int main() {
         buffer.vibrato_sine(i->midi_note, i->midi_octave);
         buffer.save(i->note_name + ".wav");
     }
+}
 
-    buffer.resize(44100 * 8);
+void make_long_note() {
+
+    Buffer buffer(44100 * 8);
     buffer.repeator();
     buffer.save("c1_long.wav");
-    */
+}
 
+int main() {
+
+    Buffer buffer(44100*4);
     buffer.amen();
     buffer.save("output.wav");
 
