@@ -29,6 +29,44 @@ public:
     }
 
     void amen() {
+        
+        unsigned char sequence[] = {
+            1, 0,
+            0, 0,
+            2, 0,
+            1, 0,
+            0, 0,
+            1, 0,
+            3, 0,
+            3, 0,
+        };
+
+        unsigned char *waveform[] = { 0, amen_bd, amen_hh, amen_sn };
+        unsigned int waveform_length[] = { 0, amen_bd_size, amen_hh_size, amen_sn_size };
+
+        for(int n = 0; n < smp_count(); ++n) {
+
+            int beat = n * 8 / smp_count();
+            int beat_time = n;
+            int wi = sequence[beat*2];
+            int pfi = sequence[beat*2+1];
+            
+            unsigned char * w = waveform[wi];
+            
+            double t = beat_time * s_p_smp;
+            double ph;
+            
+            switch(pfi) {
+                case 0: ph = t; break;
+            }
+            
+            if(wi == 0)
+                samples[n] = 0.f;
+            else
+                samples[n] = w[(int)(ph * waveform_length[wi])];
+        }
+        
+        
         double p = 0;
         int seq[] = { 0, 0, 1, 2, 2, 1, 0, 0 };
         for(int n = 0; n < smp_count(); ++n) {
