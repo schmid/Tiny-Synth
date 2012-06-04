@@ -19,7 +19,7 @@ public:
     typedef signed short Sample;
 
     Buffer(unsigned int smp_count, unsigned int smp_p_s = 44100, unsigned int channels = 1)
-        : smp_p_s(smp_p_s), s_p_smp(1.0/smp_p_s), channels(channels), samples(smp_count)
+        : smp_p_s(smp_p_s), s_p_smp(1.0/smp_p_s), channels(channels), samples(smp_count), smp_count_(smp_count)
     {}
 
     ~Buffer() {}
@@ -105,7 +105,7 @@ public:
         }
     }
 
-    void vibrato_sine(int note, int octave) {
+    void vibrato_sine(int note, int octave, int offset, int length, float amp) {
 
         double ph = 0.0;
         double lfo_ph = 0.0;
@@ -114,9 +114,9 @@ public:
         double relfreq = midi2freq(note, octave) * s_p_smp; // p/s * s/smp
         double lfo_relfreq = 8 * s_p_smp;
 
-        for(int n = 0; n < smp_count(); n++) {
+        for(int n = 0; n < length; n++) {
 
-            env = 0.9 - 0.9 * 2 * (float)n / smp_count();
+            env = 0.9 - 0.9 * (float)n / length;
             if(env < 0)
                 env = 0;
 
@@ -124,16 +124,18 @@ public:
             ph += relfreq + svin(lfo_ph) * 0.00006;
             lfo_ph += lfo_relfreq;
 
-            samples[n] = out;
+            samples[offset + n] = out * amp;
         }
     }
+
+	inline void set(int index, float value) { samples[index] = value; }
 
     void save(const string & filename) {
         Wav_file<Sample> wav_file(channels, smp_p_s);
         wav_file.save(filename.c_str(), samples);
     }
 
-    unsigned int smp_count() { return samples.size(); }
+    unsigned int smp_count() { return smp_count_; }
 
     void resize(unsigned int new_size) { samples.resize(new_size); }
 
@@ -142,34 +144,62 @@ private:
     double s_p_smp;
     unsigned int smp_p_s;
     unsigned int channels;
+	unsigned int smp_count_;
 };
 
-void make_notes() {
-    Buffer buffer(44100/2);
-    struct Note {
-        Note(const string & note_name, int midi_note, int midi_octave)
-            : note_name(note_name),
-              midi_note(midi_note),
-              midi_octave(midi_octave)
-        {}
-        string note_name;
-        int midi_note;
-        int midi_octave;
-    };
 
+struct Note {
+    Note(const string & note_name, int midi_note, int midi_octave)
+        : note_name(note_name),
+            midi_note(midi_note),
+            midi_octave(midi_octave)
+    {}
+    string note_name;
+    int midi_note;
+    int midi_octave;
+};
+
+
+void make_metronome_notes(int length, const string & prefix) {
+    Buffer buffer(length);
     vector<Note> notes;
     ostringstream ss;
     for(int n = 0; n <= 12; ++n) {
         ss.str("");
-        ss << "note" << n;
+        ss << prefix << n;
+        notes.push_back(Note(ss.str(), n, 3));
+    }
+
+	int note_length = length / 4;
+
+    for(auto i = notes.cbegin(); i != notes.cend(); ++i) {
+
+        buffer.vibrato_sine(i->midi_note, i->midi_octave + 1, note_length * 0, note_length , 1.0f);
+		buffer.vibrato_sine(i->midi_note, i->midi_octave + 0, note_length * 1, note_length , 0.4f);
+		buffer.vibrato_sine(i->midi_note, i->midi_octave + 0, note_length * 2, note_length , 0.6f);
+		buffer.vibrato_sine(i->midi_note, i->midi_octave + 0, note_length * 3, note_length , 0.4f);
+
+        buffer.save(i->note_name + ".wav");
+    }
+}
+
+void make_notes(int length, const string & prefix) {
+    Buffer buffer(length);
+    vector<Note> notes;
+    ostringstream ss;
+    for(int n = 0; n <= 12; ++n) {
+        ss.str("");
+        ss << prefix << n;
         notes.push_back(Note(ss.str(), n, 3));
     }
 
     for(auto i = notes.cbegin(); i != notes.cend(); ++i) {
-        buffer.vibrato_sine(i->midi_note, i->midi_octave);
+
+        buffer.vibrato_sine(i->midi_note, i->midi_octave, 0, length , 1.0f);
         buffer.save(i->note_name + ".wav");
     }
 }
+
 
 void make_long_note() {
 
@@ -180,9 +210,13 @@ void make_long_note() {
 
 int main() {
 
+	make_notes(44100 / 2, "note");
+	make_metronome_notes(44100 * 4, "metronome");
+
+/*
     Buffer buffer(44100*4);
     buffer.amen();
     buffer.save("output.wav");
-
+	*/
     return 0;
 }

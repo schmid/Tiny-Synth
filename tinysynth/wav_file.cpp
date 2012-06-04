@@ -53,8 +53,10 @@ void Wav_file<Sample_type>::save(const string & filename, const vector<Sample_ty
 
     unsigned int o = 4;
     unsigned int sample_count = samples.size();
-    data[o++] = sample_count & 255; data[o++] = (sample_count >> 8) & 255;
-    data[o++] = (sample_count >> 16) & 255; data[o++] = sample_count >> 24;
+
+	unsigned int data_size = sample_count * sizeof(Sample_type);
+    data[o++] = data_size & 255; data[o++] = (data_size >> 8) & 255;
+    data[o++] = (data_size >> 16) & 255; data[o++] = data_size >> 24;
 
     unsigned int length = 4 + sizeof(fmt) + sizeof(data) + sizeof(Sample_type) * sample_count; // compute full length
     riff[4] = length & 255; riff[5] = (length>>8) & 255;    
