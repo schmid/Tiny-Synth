@@ -208,10 +208,28 @@ void make_long_note() {
     buffer.save("c1_long.wav");
 }
 
+void make_constant_sine(int length, float frequency__period_p_s, const string & filename) {
+
+	Buffer buffer(length, 48000u);
+
+	double ph = 0.0;
+	double relfreq = frequency__period_p_s * (1.0/48000); // p/s * s/smp
+	float amp = 0.5f;
+
+	for(int n = 0; n < length; n++) {
+		double out = svin(ph);
+		ph += relfreq;
+		buffer.set(n, out * amp);
+	}
+
+	buffer.save(filename);
+}
+
 int main() {
 
-	make_notes(44100 / 2, "note");
-	make_metronome_notes(44100 * 4, "metronome");
+	// make_notes(44100 / 2, "note");
+	// make_metronome_notes(44100 * 4, "metronome");
+	make_constant_sine(1024 * 50 /* 1 s */, 93.75 /* period = 512 smp */, "constant_sine_period_512.wav");
 
 /*
     Buffer buffer(44100*4);
